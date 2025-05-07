@@ -1,20 +1,6 @@
-# Differential Gaussian Rasterization Extensions
+# Differential Gaussian Rasterization
 
-This is a forked repository of the rasterization pipeline from the paper "3D Gaussian Splatting for Real-Time Rendering of Radiance Fields". The same repo can be seen at [depth-diff-gaussian-rasterization](https://github.com/ingra14m/depth-diff-gaussian-rasterization). To facilitate everyone's search, I have separated this repo from the forked branch. I have made some extensions to it: 
-
-- main branch incorporates only the forward pass of depth, which is used for depth visualization. 
-- 4th-degree: add the 4th degree of SH
-- depth: add both the forward and backward pass of depth, which is used for some tasks with depth supervision.
-- latest: is the dev branch that contains acc and depth visualization, together with depth backward pass. 
-- depth-mean3D: add additional backward pass to the mean3D based on the `depth` branch 
-
-
-
-## News
-
-- 23/11/9. Thanks to [slothfulxtx](https://github.com/slothfulxtx) for adding depth backward pass to mean3D. I have put this optimization on the `depth-mean3D` branch.
-
-
+Used as the rasterization engine for the paper "3D Gaussian Splatting for Real-Time Rendering of Radiance Fields". If you can make use of it in your own research, please be so kind to cite us.
 
 <section class="section" id="BibTeX">
   <div class="container is-max-desktop content">
