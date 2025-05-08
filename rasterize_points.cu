@@ -226,6 +226,7 @@ torch::Tensor markVisible(
 torch::Tensor
 RasterizeGaussiansfilterCUDA(
 	const torch::Tensor& means3D,
+	const torch::Tensor& opacity,
 	const torch::Tensor& scales,
 	const torch::Tensor& rotations,
 	const float scale_modifier,
@@ -274,6 +275,7 @@ RasterizeGaussiansfilterCUDA(
 	    P, M,
 		W, H,
 		means3D.contiguous().data<float>(),
+		opacity.contiguous().data<float>(), 
 		scales.contiguous().data_ptr<float>(),
 		scale_modifier,
 		rotations.contiguous().data_ptr<float>(),

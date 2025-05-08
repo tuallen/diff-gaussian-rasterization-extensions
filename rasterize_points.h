@@ -70,6 +70,7 @@ torch::Tensor markVisible(
 torch::Tensor
 RasterizeGaussiansfilterCUDA(
 	const torch::Tensor& means3D,
+	const torch::Tensor& opacity,
 	const torch::Tensor& scales,
 	const torch::Tensor& rotations,
 	const float scale_modifier,

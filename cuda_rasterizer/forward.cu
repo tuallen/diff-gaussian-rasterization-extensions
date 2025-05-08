@@ -232,11 +232,19 @@ __global__ void preprocessCUDA(int P, int D, int M,
 	float lambda1 = mid + sqrt(max(0.1f, mid * mid - det));
 	float lambda2 = mid - sqrt(max(0.1f, mid * mid - det));
 	float my_radius = ceil(3.f * sqrt(max(lambda1, lambda2)));
+
+	// Updated: Compute extent in screen space by identifying exact
+	// screen-space tile.overlap with Gaussian.
+	// No longer need radius
 	float2 point_image = { ndc2Pix(p_proj.x, W), ndc2Pix(p_proj.y, H) };
-	uint2 rect_min, rect_max;
-	getRect(point_image, my_radius, rect_min, rect_max, grid);
-	if ((rect_max.x - rect_min.x) * (rect_max.y - rect_min.y) == 0)
-		return;
+	float4 con_o = { conic.x, conic.y, conic.z, opacities[idx] };
+	// Only counts tiles touched when nullptr is passed as array argment.
+	uint32_t tiles_count = duplicateToTilesTouched(
+		point_image, con_o, grid,
+		0, 0, 0,
+		nullptr, nullptr);
+	if (tiles_count == 0)
+	  return;
 
 	// If colors have been precomputed, use them, otherwise convert
 	// spherical harmonics coefficients to RGB color.
@@ -253,13 +261,13 @@ __global__ void preprocessCUDA(int P, int D, int M,
 	radii[idx] = my_radius;
 	points_xy_image[idx] = point_image;
 	// Inverse 2D covariance and opacity neatly pack into one float4
-	conic_opacity[idx] = { conic.x, conic.y, conic.z, opacities[idx]};
+	conic_opacity[idx] = con_o;
 
 	// modified by lt
 	// float det_bias = ((cov.x+0.3) * (cov.z+0.3) - cov.y * cov.y);
 	// conic_opacity[idx] = { conic.x, conic.y, conic.z, opacities[idx]*sqrt(det/det_bias)};
 	
-	tiles_touched[idx] = (rect_max.y - rect_min.y) * (rect_max.x - rect_min.x);
+	tiles_touched[idx] = tiles_count;
 }
 
 
@@ -270,6 +278,7 @@ __global__ void filter_preprocessCUDA(int P, int M,
 	const glm::vec3* scales,
 	const float scale_modifier,
 	const glm::vec4* rotations,
+	const float* opacities,
 	const float* cov3D_precomp,
 	const float* viewmatrix,
 	const float* projmatrix,
@@ -320,6 +329,8 @@ __global__ void filter_preprocessCUDA(int P, int M,
 	float det = (cov.x * cov.z - cov.y * cov.y);
 	if (det == 0.0f)
 		return;
+	float det_inv = 1.f / det;
+	float3 conic = { cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv };
 
 
 	// Compute extent in screen space (by finding eigenvalues of
@@ -330,11 +341,19 @@ __global__ void filter_preprocessCUDA(int P, int M,
 	float lambda1 = mid + sqrt(max(0.1f, mid * mid - det));
 	float lambda2 = mid - sqrt(max(0.1f, mid * mid - det));
 	float my_radius = ceil(3.f * sqrt(max(lambda1, lambda2)));
+	
+	// Updated: Compute extent in screen space by identifying exact
+	// screen-space tile.overlap with Gaussian.
+	// No longer need radius
 	float2 point_image = { ndc2Pix(p_proj.x, W), ndc2Pix(p_proj.y, H) };
-	uint2 rect_min, rect_max;
-	getRect(point_image, my_radius, rect_min, rect_max, grid);
-	if ((rect_max.x - rect_min.x) * (rect_max.y - rect_min.y) == 0)
-		return;
+	float4 con_o = { conic.x, conic.y, conic.z, opacities[idx] };
+	// Only counts tiles touched when nullptr is passed as array argment.
+	uint32_t tiles_count = duplicateToTilesTouched(
+		point_image, con_o, grid,
+		0, 0, 0,
+		nullptr, nullptr);
+	if (tiles_count == 0)
+	  return;
 
 
 	radii[idx] = my_radius;
@@ -556,6 +575,7 @@ void FORWARD::filter_preprocess(int P, int M,
 	const glm::vec3* scales,
 	const float scale_modifier,
 	const glm::vec4* rotations,
+	const float* opacities,
 	const float* cov3D_precomp,
 	const float* viewmatrix,
 	const float* projmatrix,
@@ -574,6 +594,7 @@ void FORWARD::filter_preprocess(int P, int M,
 		scales,
 		scale_modifier,
 		rotations,
+		opacities,
 		cov3D_precomp,
 		viewmatrix, 
 		projmatrix,

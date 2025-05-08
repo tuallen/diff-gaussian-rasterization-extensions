@@ -232,10 +232,12 @@ class GaussianRasterizer(nn.Module):
             raster_settings, 
         )
 
-    def visible_filter(self, means3D, scales = None, rotations = None, cov3D_precomp = None):
+    def visible_filter(self, means3D, opacity = None, scales = None, rotations = None, cov3D_precomp = None):
         
         raster_settings = self.raster_settings
 
+        if opacity is None:
+            scales = torch.Tensor([])
         if scales is None:
             scales = torch.Tensor([])
         if rotations is None:
@@ -246,6 +248,7 @@ class GaussianRasterizer(nn.Module):
         # Invoke C++/CUDA rasterization routine
         with torch.no_grad():
             radii = _C.rasterize_aussians_filter(means3D,
+            opacity,
             scales,
             rotations,
             raster_settings.scale_modifier,
